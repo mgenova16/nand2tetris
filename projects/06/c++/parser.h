@@ -25,13 +25,12 @@ class Parser
         std::string getSymbol();
         void resetFile();
         
-        std::string curCommand;
         bool isValidCommand;
 
     private:
         int lineNo = 0;
-        std::string line;
-        std::string nextLine;
+        std::string curCommand;
+        std::string nextCommand;
         std::ifstream file;
 };
 

@@ -20,23 +20,23 @@ SymbolTable::SymbolTable()
     this->nextAddress = 16;
 };
 
-void SymbolTable::addEntry(std::string symbol)
+void SymbolTable::addEntry(std::string& symbol)
 {
     this->symbolTable.insert(std::pair<std::string, int> (symbol, this->nextAddress));
     this->nextAddress++;
 }
 
-void SymbolTable::addEntry(std::string symbol, int address)
+void SymbolTable::addEntry(std::string& symbol, int address)
 {
     this->symbolTable.insert(std::pair<std::string, int> (symbol, address));
 }
 
-bool SymbolTable::contains(std::string symbol)
+bool SymbolTable::contains(std::string& symbol)
 {
     return !(this->symbolTable.find(symbol) == this->symbolTable.end());
 }
 
-int SymbolTable::getAddress(std::string symbol)
+int SymbolTable::getAddress(std::string& symbol)
 {
     if (!this->contains(symbol)) {
         std::cout << "ERROR: Symbol " << symbol << " not found\n";

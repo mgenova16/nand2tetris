@@ -8,10 +8,10 @@ class SymbolTable
 {
     public:
         SymbolTable();
-        void addEntry(std::string symbol);
-        void addEntry(std::string symbol, int address);
-        bool contains(std::string symbol);
-        int getAddress(std::string symbol);
+        void addEntry(std::string& symbol);
+        void addEntry(std::string& symbol, int address);
+        bool contains(std::string& symbol);
+        int getAddress(std::string& symbol);
 
     private:
         std::map<std::string, int> symbolTable;

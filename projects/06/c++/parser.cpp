@@ -34,7 +34,7 @@ Parser::Parser(std::string& filename)
         std::cout << "Can't open file " << filename << "\n";
         exit(1);
     }
-    getline(this->file, this->nextLine);
+    getline(this->file, this->nextCommand);
     this->isValidCommand = false;
 }
 
@@ -51,20 +51,19 @@ bool Parser::hasMoreCommands()
 void Parser::advance()
 {
     do {
-        this->line = this->nextLine;
-        stripComments(this->line);
-        stripWhiteSpace(this->line);
+        this->curCommand = this->nextCommand;
+        stripComments(this->curCommand);
+        stripWhiteSpace(this->curCommand);
         this->lineNo++;
-        getline(this->file, this->nextLine);
-    } while (this->line.empty() && this->hasMoreCommands());
+        getline(this->file, this->nextCommand);
+    } while (this->curCommand.empty() && this->hasMoreCommands());
 
     // handles case when there are non-command lines at end of file
-    if (!this->line.empty()) {
+    if (!this->curCommand.empty()) {
         this->isValidCommand = true;
     } else {
         this->isValidCommand = false;
     }
-    this->curCommand = this->line;
 }
 
 void Parser::resetFile()
@@ -86,6 +85,7 @@ CommandType Parser::getCommandType()
             break;
         default:
             curType = C_COMMAND;
+            break;
     }
     return curType;
 }

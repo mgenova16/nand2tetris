@@ -25,10 +25,10 @@ class Code
 {
     public:
         Code();
-        AInstruction getAInstruction(std::string symbol, SymbolTable& symbolTable);
-        CInstruction getCInstruction(std::string dest, std::string comp, std::string jump);
+        AInstruction getAInstruction(std::string& symbol, SymbolTable& symbolTable);
+        CInstruction getCInstruction(std::string& dest, std::string& comp, std::string& jump);
 
-    public:
+    private:
         std::map<std::string, int> destMap;
         std::map<std::string, int> compMap;
         std::map<std::string, int> jumpMap;

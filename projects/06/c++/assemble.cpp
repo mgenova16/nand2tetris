@@ -7,14 +7,14 @@
 #include <bitset>
 
 
-void printAInstruction(AInstruction aInstruction, std::ofstream& out)
+void printAInstruction(AInstruction& aInstruction, std::ofstream& out)
 {
     std::bitset<1> ibit = std::bitset<1> (aInstruction.ibit);
     std::bitset<15> address = std::bitset<15> (aInstruction.address);
     out << ibit << address << "\n";
 }
 
-void printCInstruction(CInstruction cInstruction, std::ofstream& out)
+void printCInstruction(CInstruction& cInstruction, std::ofstream& out)
 {
     std::bitset<3> ibits = std::bitset<3> (cInstruction.ibits);
     std::bitset<7> cbits = std::bitset<7> (cInstruction.cbits);
@@ -26,13 +26,13 @@ void printCInstruction(CInstruction cInstruction, std::ofstream& out)
 int main(int argc, char** argv)
 {
     std::string filename = argv[1];
-    std::size_t ext_start = filename.find(".asm");
-    if (ext_start == std::string::npos) {
+    std::size_t extStart = filename.find(".asm");
+    if (extStart == std::string::npos) {
         std::cout << "File must be .asm file\n";
         exit(1);
     }
     
-    std::string outfilename = filename.substr(0, ext_start) + ".cpp.hack";
+    std::string outfilename = filename.substr(0, extStart) + ".cpp.hack";
     std::ofstream out;
     out.open(outfilename);
     
@@ -46,7 +46,7 @@ int main(int argc, char** argv)
     int ROMAddress = 0;
     int nextAddress = 16;
     int address;
-    std::string command, symbol, dest, comp, jump;
+    std::string symbol, dest, comp, jump;
   
     while (parser.hasMoreCommands()) {
         parser.advance();
@@ -65,7 +65,6 @@ int main(int argc, char** argv)
 
     while (parser.hasMoreCommands()) {
         parser.advance();
-        command = parser.curCommand;
         if (!parser.isValidCommand) {
             continue;
         }

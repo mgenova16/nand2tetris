@@ -30,7 +30,7 @@ Code::Code()
     };
 }
 
-AInstruction Code::getAInstruction(std::string symbol, SymbolTable& symbolTable)
+AInstruction Code::getAInstruction(std::string& symbol, SymbolTable& symbolTable)
 {
     AInstruction aInstruction;
     int address;
@@ -46,7 +46,7 @@ AInstruction Code::getAInstruction(std::string symbol, SymbolTable& symbolTable)
     return aInstruction;
 }
 
-CInstruction Code::getCInstruction(std::string dest, std::string comp, std::string jump)
+CInstruction Code::getCInstruction(std::string& dest, std::string& comp, std::string& jump)
 {
     CInstruction cInstruction;
     cInstruction.dbits = this->destMap[dest];
