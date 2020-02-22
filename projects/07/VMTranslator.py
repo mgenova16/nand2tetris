@@ -10,8 +10,7 @@ def main():
         for f in in_files:
             with open(f, 'r') as f_in:
                 for line in f_in:
-                    asm = translate(line, f.stem)
-                    f_out.write(asm)
+                    f_out.write(translate(line, f.stem))
 
 
 def get_files():
@@ -38,69 +37,44 @@ def translate(line, f):
 
 def translate_math(command):
     cmds = []
-    n = n_args(command)
-    cmds += args_from_stack(n)
+    n = math_ops[command]['n_args']
+    cmds += ' D=M '.join('@SP M=M-1 A=M' for _ in range(n)).split()
     cmds += [math_ops[command]['asm_op']]
-    cmds += inc_sp()
+    cmds += ['@SP', 'M=M+1']
     return cmds
 
 
 def translate_comp(command):
     cmds = []
     comp_count = next(comp_counter)
-    cmds += args_from_stack(2)
+    cmds += ['@SP', 'M=M-1', 'A=M', 'D=M']
+    cmds += ['@SP', 'M=M-1', 'A=M']
     cmds += ['D=M-D']
     cmds += ['@COMP_JUMP.{}'.format(comp_count)]
     cmds += [comp_ops[command]]
-    cmds += ['@SP']
-    cmds += ['A=M']
-    cmds += ['M=0']
+    cmds += ['@SP', 'A=M', 'M=0']
     cmds += ['@INC_SP_JUMP.{}'.format(comp_count)]
     cmds += ['0;JMP']
     cmds += ['(COMP_JUMP.{})'.format(comp_count)]
-    cmds += ['@SP']
-    cmds += ['A=M']
-    cmds += ['M=-1']
+    cmds += ['@SP', 'A=M', 'M=-1']
     cmds += ['(INC_SP_JUMP.{})'.format(comp_count)]
-    cmds += inc_sp()
+    cmds += ['@SP', 'M=M+1']
     return cmds
 
 
 def translate_mem(f, command, segment, index):
     cmds = []
-    cmds += set_a_to_address(f, segment, index)
+    cmds += segment_lookups[segment](index, f)
     if command == 'push':
-        if segment == 'constant':
-            cmds += ['D=A']
-        else:
-            cmds += ['D=M']
-        cmds += ['@SP']
-        cmds += ['A=M']
-        cmds += ['M=D']
-        cmds += inc_sp()
+        cmds += ['D=A'] if segment == 'constant' else ['D=M']
+        cmds += ['@SP', 'A=M', 'M=D']
+        cmds += ['@SP', 'M=M+1']
     else:
         cmds += ['D=A']
-        cmds += ['@R13']
-        cmds += ['M=D']
-        cmds += dec_sp()
-        cmds += ['A=M']
-        cmds += ['D=M']
-        cmds += ['@R13']
-        cmds += ['A=M']
-        cmds += ['M=D']
+        cmds += ['@R13', 'M=D']
+        cmds += ['@SP', 'M=M-1', 'A=M', 'D=M']
+        cmds += ['@R13', 'A=M', 'M=D']
     return cmds
-
-
-def args_from_stack(n):
-    cmds = []
-    cmds += dec_sp()
-    cmds += ['A=M']
-    if n == 2:
-        cmds += ['D=M']
-        cmds += dec_sp()
-        cmds += ['A=M']
-    return cmds
-
 
 
 def comp_incrementer():
@@ -108,25 +82,6 @@ def comp_incrementer():
     while True:
         yield i
         i += 1
-
-
-def dec_sp():
-    return ['@SP', 'M=M-1']
-
-
-def inc_sp():
-    return ['@SP', 'M=M+1']
-
-
-def n_args(command):
-    return math_ops[command]['n_args']
-
-
-
-def set_a_to_address(f, segment, index):
-    lookup = segment_lookups[segment]
-    return lookup(index, f)
-
 
 math_ops = {
     'add': {'asm_op': 'M=M+D', 'n_args': 2},
