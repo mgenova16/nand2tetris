@@ -38,27 +38,25 @@ def translate(line, f):
 def translate_math(command):
     cmds = []
     n = math_ops[command]['n_args']
-    cmds += ' D=M '.join('@SP M=M-1 A=M' for _ in range(n)).split()
+    cmds += ['@SP', 'A=M-1'] if n == 1 else ['@SP', 'AM=M-1', 'D=M', 'A=A-1']
     cmds += [math_ops[command]['asm_op']]
-    cmds += ['@SP', 'M=M+1']
     return cmds
 
 
 def translate_comp(command):
     cmds = []
     comp_count = next(comp_counter)
-    cmds += ['@SP', 'M=M-1', 'A=M', 'D=M']
-    cmds += ['@SP', 'M=M-1', 'A=M']
+    cmds += ['@SP', 'AM=M-1', 'D=M']
+    cmds += ['@SP', 'A=M-1']
     cmds += ['D=M-D']
     cmds += ['@COMP_JUMP.{}'.format(comp_count)]
     cmds += [comp_ops[command]]
-    cmds += ['@SP', 'A=M', 'M=0']
-    cmds += ['@INC_SP_JUMP.{}'.format(comp_count)]
+    cmds += ['@SP', 'A=M-1', 'M=0']
+    cmds += ['@CONTINUE_JUMP.{}'.format(comp_count)]
     cmds += ['0;JMP']
     cmds += ['(COMP_JUMP.{})'.format(comp_count)]
-    cmds += ['@SP', 'A=M', 'M=-1']
-    cmds += ['(INC_SP_JUMP.{})'.format(comp_count)]
-    cmds += ['@SP', 'M=M+1']
+    cmds += ['@SP', 'A=M-1', 'M=-1']
+    cmds += ['(CONTINUE_JUMP.{})'.format(comp_count)]
     return cmds
 
 
@@ -67,12 +65,11 @@ def translate_mem(f, command, segment, index):
     cmds += segment_lookups[segment](index, f)
     if command == 'push':
         cmds += ['D=A'] if segment == 'constant' else ['D=M']
-        cmds += ['@SP', 'A=M', 'M=D']
-        cmds += ['@SP', 'M=M+1']
+        cmds += ['@SP', 'M=M+1', 'A=M-1', 'M=D']
     else:
         cmds += ['D=A']
         cmds += ['@R13', 'M=D']
-        cmds += ['@SP', 'M=M-1', 'A=M', 'D=M']
+        cmds += ['@SP', 'AM=M-1', 'D=M']
         cmds += ['@R13', 'A=M', 'M=D']
     return cmds
 
