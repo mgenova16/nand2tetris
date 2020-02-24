@@ -23,8 +23,6 @@ def get_files():
 
 def translate(line, f):
     command, *args = line.split('//')[0].strip().split(' ')
-    if len(command) == 0:
-        return ''
     cmds = []
     if command in math_ops:
         cmds += translate_math(command)
@@ -32,7 +30,7 @@ def translate(line, f):
         cmds += translate_comp(command)
     elif command in mem_ops:
         cmds += translate_mem(f, command, *args)
-    return '\n'.join(cmds) + '\n'
+    return '\n'.join(cmds) + ('\n' if len(cmds) > 0 else '')
 
 
 def translate_math(command):
@@ -62,7 +60,7 @@ def translate_comp(command):
 
 def translate_mem(f, command, segment, index):
     cmds = []
-    cmds += segment_lookups[segment](index, f)
+    cmds += segment_address_lookups[segment](index, f)
     if command == 'push':
         cmds += ['D=A'] if segment == 'constant' else ['D=M']
         cmds += ['@SP', 'M=M+1', 'A=M-1', 'M=D']
@@ -80,6 +78,7 @@ def comp_incrementer():
         yield i
         i += 1
 
+
 math_ops = {
     'add': {'asm_op': 'M=M+D', 'n_args': 2},
     'sub': {'asm_op': 'M=M-D', 'n_args': 2},
@@ -93,7 +92,7 @@ comp_ops = {'eq': 'D;JEQ', 'lt': 'D;JLT', 'gt': 'D;JGT'}
 
 mem_ops = ['push', 'pop']
 
-segment_lookups = {
+segment_address_lookups = {
     'local':    lambda i, f: '@LCL D=M @{} A=D+A'.format(i).split(),
     'argument': lambda i, f: '@ARG D=M @{} A=D+A'.format(i).split(),
     'this':     lambda i, f: '@THIS D=M @{} A=D+A'.format(i).split(),
