@@ -47,14 +47,14 @@ def translate_comp(command):
     cmds += ['@SP', 'AM=M-1', 'D=M']
     cmds += ['@SP', 'A=M-1']
     cmds += ['D=M-D']
-    cmds += ['@COMP_JUMP.{}'.format(comp_count)]
+    cmds += [f'@COMP_JUMP.{comp_count}']
     cmds += [comp_ops[command]]
     cmds += ['@SP', 'A=M-1', 'M=0']
-    cmds += ['@CONTINUE_JUMP.{}'.format(comp_count)]
+    cmds += [f'@CONTINUE_JUMP.{comp_count}']
     cmds += ['0;JMP']
-    cmds += ['(COMP_JUMP.{})'.format(comp_count)]
+    cmds += [f'(COMP_JUMP.{comp_count})']
     cmds += ['@SP', 'A=M-1', 'M=-1']
-    cmds += ['(CONTINUE_JUMP.{})'.format(comp_count)]
+    cmds += [f'(CONTINUE_JUMP.{comp_count})']
     return cmds
 
 
@@ -93,14 +93,14 @@ comp_ops = {'eq': 'D;JEQ', 'lt': 'D;JLT', 'gt': 'D;JGT'}
 mem_ops = ['push', 'pop']
 
 segment_address_lookups = {
-    'local':    lambda i, f: '@LCL D=M @{} A=D+A'.format(i).split(),
-    'argument': lambda i, f: '@ARG D=M @{} A=D+A'.format(i).split(),
-    'this':     lambda i, f: '@THIS D=M @{} A=D+A'.format(i).split(),
-    'that':     lambda i, f: '@THAT D=M @{} A=D+A'.format(i).split(),
-    'pointer':  lambda i, f: '@R{}'.format(3 + int(i)).split(),
-    'temp':     lambda i, f: '@R{}'.format(5 + int(i)).split(),
-    'static':   lambda i, f: '@{}.{}'.format(f, i).split(),
-    'constant': lambda i, f: '@{}'.format(i).split(),
+    'local':    lambda i, f: f'@LCL D=M @{i} A=D+A'.split(),
+    'argument': lambda i, f: f'@ARG D=M @{i} A=D+A'.split(),
+    'this':     lambda i, f: f'@THIS D=M @{i} A=D+A'.split(),
+    'that':     lambda i, f: f'@THAT D=M @{i} A=D+A'.split(),
+    'pointer':  lambda i, f: [f'@R{3 + int(i)}'],
+    'temp':     lambda i, f: [f'@R{5 + int(i)}'],
+    'static':   lambda i, f: [f'@{f}.{i}'],
+    'constant': lambda i, f: [f'@{i}'],
 }
 
 comp_counter = comp_incrementer()
