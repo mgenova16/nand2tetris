@@ -60,15 +60,22 @@ def translate_comp(command):
 
 def translate_mem(f, command, segment, index):
     cmds = []
-    cmds += segment_address_lookups[segment](index, f)
+    seg_addr = segment_address_lookups[segment](index, f)
     if command == 'push':
+        cmds += seg_addr
         cmds += ['D=A'] if segment == 'constant' else ['D=M']
         cmds += ['@SP', 'M=M+1', 'A=M-1', 'M=D']
     else:
-        cmds += ['D=A']
-        cmds += ['@R13', 'M=D']
-        cmds += ['@SP', 'AM=M-1', 'D=M']
-        cmds += ['@R13', 'A=M', 'M=D']
+        if len(seg_addr) > 1:
+            cmds += seg_addr
+            cmds += ['D=A']
+            cmds += ['@R13', 'M=D']
+            cmds += ['@SP', 'AM=M-1', 'D=M']
+            cmds += ['@R13', 'A=M', 'M=D']
+        else:
+            cmds += ['@SP', 'AM=M-1', 'D=M']
+            cmds += seg_addr
+            cmds += ['M=D']
     return cmds
 
 
