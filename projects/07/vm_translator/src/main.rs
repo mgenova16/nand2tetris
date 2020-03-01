@@ -24,8 +24,8 @@ fn main() -> Result<(), io::Error> {
         for line in reader.lines() {
             let mut u_line = line.unwrap();
             let translated_line = parser.translate(&mut u_line);
-            if translated_line.len() > 0 {
-                writeln!(f_out, "{}", translated_line)?;
+            if let Some(l) = translated_line {
+                writeln!(f_out, "{}", l)?;
             }
         }
     }

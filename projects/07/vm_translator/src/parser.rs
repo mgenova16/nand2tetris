@@ -18,14 +18,14 @@ impl<'a> Parser<'a> {
         Parser { file, comp_count: 0 }
     }
 
-    pub fn translate(&mut self, line: &mut String) -> String {
+    pub fn translate(&mut self, line: &mut String) -> Option<String> {
         let cmd = Self::get_command(line);
         
         match cmd {
-            Command::Math { cmd, n_args } => Self::translate_math(cmd, n_args),
-            Command::Comparison { cmd } => self.translate_comp(cmd),
-            Command::Memory { cmd, seg, idx } => self.translate_mem(cmd, &seg, idx),
-            Command::NonCommand => String::new(),
+            Command::Math { cmd, n_args } => Some(Self::translate_math(cmd, n_args)),
+            Command::Comparison { cmd } => Some(self.translate_comp(cmd)),
+            Command::Memory { cmd, seg, idx } => Some(self.translate_mem(cmd, &seg, idx)),
+            Command::NonCommand => None,
         }
     }
 
@@ -38,7 +38,7 @@ impl<'a> Parser<'a> {
     }
 
     fn translate_comp(&mut self, cmd: &str) -> String {
-        let mut c = Vec::with_capacity(10);
+        let mut c = Vec::with_capacity(18);
         
         let count = self.comp_count;
         let fname = self.file.file_stem().unwrap().to_str().unwrap();
@@ -62,7 +62,7 @@ impl<'a> Parser<'a> {
     }
 
     fn translate_mem(&self, cmd: &str, segment: &String, index: usize) -> String {
-        let mut c = Vec::with_capacity(10);
+        let mut c = Vec::with_capacity(13);
         
         let seg_addr = self.get_seg_addr(segment, index);
         let seg_addr = seg_addr.split_whitespace().collect::<Vec<_>>();
