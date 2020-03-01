@@ -50,11 +50,11 @@ impl TranslatorFiles {
         p.is_file() && p.extension().map(|e| e == "vm").unwrap_or(false)
     }
 
-	pub fn vm_files(&self) -> &Vec<PathBuf> {
-		&self.vm_files
-	}
+    pub fn vm_files(&self) -> &Vec<PathBuf> {
+        &self.vm_files
+    }
 
-	pub fn asm_file(&self) -> &PathBuf {
-		&self.asm_file
-	}
+    pub fn asm_file(&self) -> &PathBuf {
+        &self.asm_file
+    }
 }
