@@ -29,6 +29,7 @@ CMD_POP = 'pop'
 CMD_LABEL = 'label'
 CMD_GOTO = 'goto'
 CMD_IF_GOTO = 'if-goto'
+CMDS_FLOW = [CMD_LABEL, CMD_GOTO, CMD_IF_GOTO]
 
 CMD_FUNCTION = 'function'
 CMD_CALL = 'call'

@@ -11,7 +11,7 @@ def main():
         p = Path(sys.argv[1])
         translator = Translator(p)
     except IndexError:
-        print(f"Usage: {sys.argv[0]} <vm file or directory>")
+        print(f'Usage: {sys.argv[0]} <vm file or directory>')
         sys.exit(1)
 
     translator.translate_all()
