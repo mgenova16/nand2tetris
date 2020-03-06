@@ -11,17 +11,17 @@ from .vm import CMD_FUNCTION
 from .vm import CMD_POP
 from .vm import CMD_PUSH
 from .vm import CMD_RETURN
-from .vm import CMDS_COMP
-from .vm import CMDS_FLOW
-from .vm import CMDS_MATH
+from .vm import COMPARISON_COMMANDS
+from .vm import MATH_COMMANDS
+from .vm import PROGRAM_FLOW_COMMANDS
 
 
 class Parser:
 
     command_type_lookup = {
-        **dict.fromkeys(CMDS_COMP, ComparisonCommand),
-        **dict.fromkeys(CMDS_FLOW, ProgramFlowCommand),
-        **dict.fromkeys(CMDS_MATH, MathCommand),
+        **dict.fromkeys(COMPARISON_COMMANDS, ComparisonCommand),
+        **dict.fromkeys(PROGRAM_FLOW_COMMANDS, ProgramFlowCommand),
+        **dict.fromkeys(MATH_COMMANDS, MathCommand),
         CMD_POP: PopCommand,
         CMD_PUSH: PushCommand,
         CMD_CALL: CallCommand,
@@ -42,11 +42,10 @@ class Parser:
             cmd, *args = line.split('//')[0].strip().split(' ')
             if cmd == '':
                 continue
-            command = self.__class__.command_type_lookup[cmd]
-            translator = command(cmd, self.filename, *args)
-            translator.translate()
-            self.out_file.write(f'\n//{cmd} {args}\n')
-            self.write(translator.assembly)
+            c_type = self.__class__.command_type_lookup[cmd]
+            command = c_type(cmd, self.filename, *args)
+            command.translate()
+            self.write(command.assembly)
 
     def write(self, assembly):
         self.out_file.write('\n'.join(assembly) + '\n')

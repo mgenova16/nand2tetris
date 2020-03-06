@@ -1,3 +1,6 @@
+from .vm import A_SP
+from .vm import A_LCL
+from .vm import A_ARG
 from .vm import CMD_ADD
 from .vm import CMD_SUB
 from .vm import CMD_NEG
@@ -42,9 +45,9 @@ class MathCommand(Command):
 
     def translate(self):
         if self.n_args == 1:
-            self.assembly += ['@SP', 'A=M-1']
+            self.assembly += [A_SP, 'A=M-1']
         else:
-            self.assembly += ['@SP', 'AM=M-1', 'D=M', 'A=A-1']
+            self.assembly += [A_SP, 'AM=M-1', 'D=M', 'A=A-1']
         self.assembly += self.operation
 
 
@@ -66,16 +69,16 @@ class ComparisonCommand(Command):
 
     def translate(self):
         comp_count = next(self.__class__.comp_counter)
-        self.assembly += ['@SP', 'AM=M-1', 'D=M']
-        self.assembly += ['@SP', 'A=M-1']
+        self.assembly += [A_SP, 'AM=M-1', 'D=M']
+        self.assembly += [A_SP, 'A=M-1']
         self.assembly += ['D=M-D']
         self.assembly += [f'@COMP_JUMP.{comp_count}']
         self.assembly += self.operation
-        self.assembly += ['@SP', 'A=M-1', 'M=0']
+        self.assembly += [A_SP, 'A=M-1', 'M=0']
         self.assembly += [f'@CONTINUE_JUMP.{comp_count}']
         self.assembly += ['0;JMP']
         self.assembly += [f'(COMP_JUMP.{comp_count})']
-        self.assembly += ['@SP', 'A=M-1', 'M=-1']
+        self.assembly += [A_SP, 'A=M-1', 'M=-1']
         self.assembly += [f'(CONTINUE_JUMP.{comp_count})']
 
 
@@ -118,10 +121,10 @@ class PopCommand(MemoryCommand):
             self.assembly += self.seg_addr
             self.assembly += ['D=A']
             self.assembly += ['@R13', 'M=D']
-            self.assembly += ['@SP', 'AM=M-1', 'D=M']
+            self.assembly += [A_SP, 'AM=M-1', 'D=M']
             self.assembly += ['@R13', 'A=M', 'M=D']
         else:
-            self.assembly += ['@SP', 'AM=M-1', 'D=M']
+            self.assembly += [A_SP, 'AM=M-1', 'D=M']
             self.assembly += self.seg_addr
             self.assembly += ['M=D']
 
@@ -134,7 +137,7 @@ class PushCommand(MemoryCommand):
     def translate(self):
         self.assembly += self.seg_addr
         self.assembly += ['D=A'] if self.segment == 'constant' else ['D=M']
-        self.assembly += ['@SP', 'M=M+1', 'A=M-1', 'M=D']
+        self.assembly += [A_SP, 'M=M+1', 'A=M-1', 'M=D']
 
 
 class ProgramFlowCommand(Command):
@@ -152,7 +155,7 @@ class ProgramFlowCommand(Command):
 
     def translate(self):
         if self.operation == CMD_IF_GOTO:
-            self.assembly += ['@SP', 'AM=M-1', 'D=M']
+            self.assembly += [A_SP, 'AM=M-1', 'D=M']
         self.assembly += self.formatted_label
         if self.operation == CMD_IF_GOTO:
             self.assembly += ['D;JNE']
@@ -168,7 +171,7 @@ class FunctionCommand(Command):
     def translate(self):
         n = int(self.n)
         self.assembly += [f'({self.function_name})']
-        self.assembly += ['D=0', '@SP', 'M=M+1', 'A=M-1', 'M=D'] * n
+        self.assembly += [A_SP, 'M=M+1', 'A=M-1', 'M=0'] * n
 
 
 class CallCommand(Command):
@@ -190,14 +193,14 @@ class CallCommand(Command):
         return_label = self.function_name + f'_RETURN.{count}'
         self.assembly += [f'@{return_label}']
         self.assembly += ['D=A']
-        self.assembly += ['@SP', 'M=M+1', 'A=M-1', 'M=D']
+        self.assembly += [A_SP, 'M=M+1', 'A=M-1', 'M=D']
         for addr in FRAME_ADDRS.values():
             self.assembly += [addr]
             self.assembly += ['D=M']
-            self.assembly += ['@SP', 'M=M+1', 'A=M-1', 'M=D']
+            self.assembly += [A_SP, 'M=M+1', 'A=M-1', 'M=D']
 
-        self.assembly += ['@SP', 'D=M', '@LCL', 'M=D']
-        self.assembly += [f'@{n + 5}', 'D=D-A', '@ARG', 'M=D']
+        self.assembly += [A_SP, 'D=M', A_LCL, 'M=D']
+        self.assembly += [f'@{n + 5}', 'D=D-A', A_ARG, 'M=D']
 
         self.assembly += [f'@{self.function_name}']
         self.assembly += ['0;JMP']
@@ -213,13 +216,13 @@ class ReturnCommand(Command):
         tmp_frame = 'R13'
         tmp_ret = 'R14'
 
-        self.assembly += ['@LCL', 'D=M', f'@{tmp_frame}', 'M=D']
+        self.assembly += [A_LCL, 'D=M', f'@{tmp_frame}', 'M=D']
         self.assembly += [f'@{tmp_frame}', 'D=M']
         self.assembly += ['@5', 'A=D-A', 'D=M']
         self.assembly += [f'@{tmp_ret}', 'M=D']
-        self.assembly += ['@SP', 'AM=M-1', 'D=M']
-        self.assembly += ['@ARG', 'A=M', 'M=D']
-        self.assembly += ['@ARG', 'D=M', '@SP', 'M=D+1']
+        self.assembly += [A_SP, 'AM=M-1', 'D=M']
+        self.assembly += [A_ARG, 'A=M', 'M=D']
+        self.assembly += [A_ARG, 'D=M', A_SP, 'M=D+1']
         addrs = list(FRAME_ADDRS.values())
         addrs.reverse()
         for i, addr in enumerate(addrs):
