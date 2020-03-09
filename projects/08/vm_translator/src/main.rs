@@ -4,7 +4,7 @@ use vm_translator::config::Config;
 use vm_translator::parser::Parser;
 use vm_translator::code_writer::CodeWriter;
 
-fn main() -> io::Result<()>{
+fn main() -> io::Result<()> {
     let args = env::args();
     let config = Config::new(args)?;
 

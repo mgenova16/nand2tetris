@@ -48,7 +48,7 @@ impl CodeWriter<File> {
 
 impl<W: Write> CodeWriter<W> {
     
-    pub fn write(&mut self, command_type: &CommandType) -> io::Result<()>  {
+    pub fn write(&mut self, command_type: &CommandType) -> io::Result<()> {
         Ok(
             match command_type {
                 CommandType::Math { command } => self.write_math(&command)?,
@@ -63,7 +63,7 @@ impl<W: Write> CodeWriter<W> {
         )
     }
 
-    fn write_math(&mut self, command: &MathCommand) -> io::Result<()>  {
+    fn write_math(&mut self, command: &MathCommand) -> io::Result<()> {
         let n_args = command.n_args();
         self.write_line("@SP")?;
 
@@ -81,7 +81,7 @@ impl<W: Write> CodeWriter<W> {
         Ok(())
     }
 
-    fn write_comparison(&mut self, command: &ComparisonCommand) -> io::Result<()>  {
+    fn write_comparison(&mut self, command: &ComparisonCommand) -> io::Result<()> {
         
         let true_jump_addr = format!("@JUMP_IF_TRUE.{}", self.comp_count);
         let true_jump_label = format!("(JUMP_IF_TRUE.{})", self.comp_count);
@@ -112,7 +112,7 @@ impl<W: Write> CodeWriter<W> {
         Ok(())
     }
 
-    fn write_push(&mut self, command: &PushCommand) -> io::Result<()>  {
+    fn write_push(&mut self, command: &PushCommand) -> io::Result<()> {
         let seg = command.segment();
         let idx = command.index();
         let segment_address = self.get_segment_address(seg, idx);
@@ -132,7 +132,7 @@ impl<W: Write> CodeWriter<W> {
         Ok(())
     }
 
-    fn write_pop(&mut self, command: &PopCommand) -> io::Result<()>  {
+    fn write_pop(&mut self, command: &PopCommand) -> io::Result<()> {
         let seg = command.segment();
         let idx = command.index();
 
@@ -164,7 +164,7 @@ impl<W: Write> CodeWriter<W> {
         Ok(())
     }
 
-    fn write_program_flow(&mut self, command: &ProgramFlowCommand) -> io::Result<()>  {
+    fn write_program_flow(&mut self, command: &ProgramFlowCommand) -> io::Result<()> {
         let c_type = command.command();
         let label = command.label();
         let out_label = match c_type.as_str() {
@@ -195,7 +195,8 @@ impl<W: Write> CodeWriter<W> {
         let n = command.n_locals();
         let f_label = format!("({})", command.function_name());
         self.write_line(f_label)?;
-        
+
+        // push 0 for each local arg
         for _ in 0..n {
             self.write_line("@SP")?;
             self.write_line("M=M+1")?;
@@ -214,13 +215,15 @@ impl<W: Write> CodeWriter<W> {
         let return_label = format!("{}_RETURN.{}", func_name, count);
         let function_label = format!("@{}", func_name);
 
+        // push return address
         self.write_line(format!("@{}", return_label))?;
         self.write_line("D=A")?;
         self.write_line("@SP")?;
         self.write_line("M=M+1")?;
         self.write_line("A=M-1")?;
         self.write_line("M=D")?;
-        
+
+        // push LCL, ARG, THIS, THAT
         for addr in frame_addrs.iter() {
             self.write_line(addr)?;
             self.write_line("D=M")?;
@@ -230,18 +233,23 @@ impl<W: Write> CodeWriter<W> {
             self.write_line("M=D")?;
         }
 
+        // LCL = SP
         self.write_line("@SP")?;
         self.write_line("D=M")?;
         self.write_line("@LCL")?;
         self.write_line("M=D")?;
         
+        // ARG = SP - 5 - n_args
         self.write_line(format!("@{}", n_args + 5))?;
         self.write_line("D=D-A")?;
         self.write_line("@ARG")?;
         self.write_line("M=D")?;
 
+        // go to function
         self.write_line(function_label)?;
         self.write_line("0;JMP")?;
+
+        // return
         self.write_line(format!("({})", return_label))?;
 
         self.call_count += 1;
@@ -249,16 +257,19 @@ impl<W: Write> CodeWriter<W> {
         Ok(())
     }
 
-    fn write_return(&mut self) -> io::Result<()>  {
+    fn write_return(&mut self) -> io::Result<()> {
         
         let frame_addrs = ["@THAT", "@THIS", "@ARG", "@LCL"];
         let tmp_frame = "@R13";
         let tmp_ret = "@R14";
 
+        // FRAME = LCL
         self.write_line("@LCL")?;
         self.write_line("D=M")?;
         self.write_line(tmp_frame)?;
         self.write_line("M=D")?;
+
+        // RET = *(FRAME - 5)
         self.write_line(tmp_frame)?;
         self.write_line("D=M")?;
         self.write_line("@5")?;
@@ -266,17 +277,22 @@ impl<W: Write> CodeWriter<W> {
         self.write_line("D=M")?;
         self.write_line(tmp_ret)?;
         self.write_line("M=D")?;
+
+        // *ARG = pop()
         self.write_line("@SP")?;
         self.write_line("AM=M-1")?;
         self.write_line("D=M")?;
         self.write_line("@ARG")?;
         self.write_line("A=M")?;
         self.write_line("M=D")?;
+
+        // SP = ARG + 1
         self.write_line("@ARG")?;
         self.write_line("D=M")?;
         self.write_line("@SP")?;
         self.write_line("M=D+1")?;
 
+        // Restore THAT, THIS, ARG, LCL of caller
         for (i, addr) in frame_addrs.iter().enumerate() {
             self.write_line(tmp_frame)?;
             self.write_line("D=M")?;
@@ -287,6 +303,7 @@ impl<W: Write> CodeWriter<W> {
             self.write_line("M=D")?;
         }
 
+        // go to return address
         self.write_line(tmp_ret)?;
         self.write_line("A=M")?;
         self.write_line("0;JMP")?;

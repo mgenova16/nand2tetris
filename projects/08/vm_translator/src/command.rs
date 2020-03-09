@@ -1,4 +1,3 @@
-#[derive(Debug)]
 pub struct MathCommand<'a> {
     pub asm_op: &'a str,
     pub n_args: usize,
@@ -26,7 +25,6 @@ impl<'a> MathCommand<'a> {
     }
 }
 
-#[derive(Debug)]
 pub struct ComparisonCommand<'a> {
     asm_op: &'a str,
 }
@@ -47,7 +45,6 @@ impl<'a> ComparisonCommand<'a> {
     }
 }
 
-#[derive(Debug)]
 pub struct PushCommand {
     segment: String,
     index: usize,
@@ -67,7 +64,6 @@ impl PushCommand {
     }
 }
 
-#[derive(Debug)]
 pub struct PopCommand {
     segment: String,
     index: usize,
@@ -87,7 +83,6 @@ impl PopCommand {
     }
 }
 
-#[derive(Debug)]
 pub struct ProgramFlowCommand {
     cmd: String,
     label: String,
@@ -107,7 +102,6 @@ impl ProgramFlowCommand {
     }
 }
 
-#[derive(Debug)]
 pub struct FunctionDefCommand {
     function_name: String,
     n_locals: usize,
@@ -127,7 +121,6 @@ impl FunctionDefCommand {
     }
 }
 
-#[derive(Debug)]
 pub struct CallCommand {
     function_name: String,
     n_args: usize,
@@ -147,10 +140,8 @@ impl CallCommand {
     }
 }
 
-#[derive(Debug)]
 pub struct ReturnCommand;
 
-#[derive(Debug)]
 pub enum CommandType<'a> {
     Math { command: MathCommand<'a> },
     Comparison { command: ComparisonCommand<'a> },
