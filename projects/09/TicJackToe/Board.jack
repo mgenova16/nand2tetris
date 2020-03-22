@@ -1,0 +1,49 @@
+class Board {
+
+    field Array squares;
+    
+    constructor Board new() {
+        do Screen.setColor(true);
+        do initializeSquares();        
+        do drawBoard();
+        return this;
+    }
+
+    method void initializeSquares() {
+        var int i, x, y;
+
+        let i = 0;
+        let squares = Array.new(9);
+
+        while (i < 9) {
+            let x =  55 + (MoreMath.mod(i, 3) * 50);
+            let y = 55 + ((i / 3) * 50);
+            let squares[i] = Square.new(x, y, 30);
+            let i = i + 1;
+        }
+        return;
+    }
+
+    method void drawBoard() {
+        var int i, start, stop, offset, m;
+        var Square cur_square;       
+ 
+        let start = 30;
+        let stop = 180;
+        let i = 1;
+        while (i < 3) {
+            let offset = i * 50;
+            do Screen.drawLine(start, start + offset, stop, start + offset);
+            do Screen.drawLine(start + offset, start, start + offset, stop);
+            let i = i + 1;
+        }
+
+        return;
+    }
+
+    method Square getSquare(int x, int y) {
+        var int idx;
+        let idx = x + MoreMath.mod(y, 3);
+        return squares[idx];
+    }
+}

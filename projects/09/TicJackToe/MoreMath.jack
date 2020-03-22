@@ -1,0 +1,11 @@
+class MoreMath {
+
+    function int mod(int numer, int denom) {
+        var int div;
+        var int result;
+
+        let div = numer / denom;
+        let result = numer - (div * denom);
+        return result;
+    }
+}

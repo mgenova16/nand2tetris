@@ -1,0 +1,88 @@
+class Game {
+    field Board board;
+
+    constructor Game new() {
+        let board = Board.new();
+        return this;
+    }
+
+    method void play() {
+        var int idx, turn, marker;
+        var boolean continue, won;
+        var Array player;
+        var Square square;
+
+        let idx = 0;
+        let turn = 0;
+        let player = Array.new(2);
+        let player[0] = 120;
+        let player[1] = 111;
+
+        let continue = true;
+        while (continue) {
+            let idx = MoreMath.mod(turn, 2);
+            let marker = player[idx];
+            let square = getSquare();
+            do square.setMarker(marker);
+            let won = checkForWinner();
+            if (won) {
+                do Output.printChar(marker);
+                do Output.printString(" wins!");
+                do Output.println();
+                let continue = false;
+            }
+        }
+        return;
+    }
+
+    method Square getSquare() {
+        var int x, y, key;
+        var boolean selection_made, moved;
+        var Square cur_square;
+        let x = 0;
+        let y = 0;
+
+        let cur_square = board.getSquare(x, y);
+        do cur_square.select();
+
+        let selection_made = true;
+        while(~selection_made) {
+            let moved = false;
+            let key = Keyboard.keyPressed();
+            if (key = 130) {
+                do cur_square.deselect();
+                let x = MoreMath.mod(x - 1, 3);
+                let moved = true;
+            }
+            if (key = 131) {
+                do cur_square.deselect();
+                let y = MoreMath.mod(y - 1, 3);
+                let moved = true;
+            }
+            if (key = 132) {
+                do cur_square.deselect();
+                let x = MoreMath.mod(x + 1, 3);
+                let moved = true;
+            }
+            if (key = 133) {
+                do cur_square.deselect();
+                let y = MoreMath.mod(y + 1, 3);
+                let moved = true;
+            }
+            if (key = 128) {
+                if (cur_square.isEmpty()) {
+                    let selection_made = true;
+                }
+            }
+            if (moved) {
+                let cur_square = board.getSquare(x, y);
+                do cur_square.select();
+            }
+        }
+        return board.getSquare(x, y);
+    }
+
+    method boolean checkForWinner() {
+        return false;
+    }
+}

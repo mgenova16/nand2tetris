@@ -1,0 +1,112 @@
+class Square {
+    field int x_center;
+    field int y_center;
+    field int square_size;
+    field int marker_size;
+    field char marker;
+
+    constructor Square new(int x, int y, int s) {
+        let x_center = x;
+        let y_center = y;
+        let square_size = s;
+        let marker_size = s / 3;
+        let marker = 32;
+        return this;
+    }
+
+    method void dispose() {
+        do drawBlank();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method boolean isEmpty() {
+        return marker = 32;
+    }
+
+    method void setMarker(char m) {
+        let marker = m;
+        do drawMarker();
+        return;
+    }
+
+    method void drawMarker() {
+        if (marker = 120) {
+            do drawX();
+        }
+        if (marker = 111) {
+            do drawO();
+        } else {
+            do drawBlank();
+        }
+        return;
+    }
+
+    method void drawX() {
+        var int x1;
+        var int x2;
+        var int y1;
+        var int y2;
+
+        let x1 = x_center - marker_size;
+        let x2 = x_center + marker_size;
+        let y1 = y_center - marker_size;
+        let y2 = y_center + marker_size;
+
+        do Screen.drawLine(x1, y1, x2, y2);
+        do Screen.drawLine(x1, y2, x2, y1);
+
+        return;
+    }
+
+    method void drawO() {
+        var int radius;
+        let radius = marker_size + (marker_size / 2);
+        do Screen.drawCircle(x_center, y_center, radius);
+        do Screen.setColor(false);
+        do Screen.drawCircle(x_center, y_center, radius - 1);
+        do Screen.setColor(true);
+        return;
+    }
+
+    method void drawBlank() {
+        var int x1;
+        var int x2;
+        var int y1;
+        var int y2;
+
+        let x1 = x_center - marker_size;
+        let x2 = x_center + marker_size;
+        let y1 = y_center - marker_size;
+        let y2 = y_center + marker_size;
+
+        do Screen.setColor(false);
+        do Screen.drawRectangle(x1, y1, x2, y2);
+        do Screen.setColor(true);
+
+        return;
+    }   
+
+    method void select() {
+        var int x1, x2, y1, y2;
+
+        let x1 = x_center - (2 * marker_size);
+        let x2 = x_center + (2 * marker_size);
+        let y1 = y_center - (2 * marker_size);
+        let y2 = y_center + (2 * marker_size);
+
+        do Screen.drawLine(x1, y1, x1, y2);
+        do Screen.drawLine(x1, y1, x2, y1);
+        do Screen.drawLine(x2, y1, x2, y2);
+        do Screen.drawLine(x1, y2, x2, y2);
+        
+        return;
+    }
+    
+    method void deselect() {
+        do Screen.setColor(false);
+        do select();
+        do Screen.setColor(true);
+        return;
+    }
+}
