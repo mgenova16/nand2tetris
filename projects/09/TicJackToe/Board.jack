@@ -43,7 +43,7 @@ class Board {
 
     method Square getSquare(int x, int y) {
         var int idx;
-        let idx = x + MoreMath.mod(y, 3);
+        let idx = x + (y * 3);
         return squares[idx];
     }
 }

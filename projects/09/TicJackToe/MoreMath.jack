@@ -4,6 +4,9 @@ class MoreMath {
         var int div;
         var int result;
 
+        if (numer < 0) {
+            let numer = numer + denom;
+        }
         let div = numer / denom;
         let result = numer - (div * denom);
         return result;

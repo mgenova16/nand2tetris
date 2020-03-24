@@ -36,7 +36,8 @@ class Square {
         }
         if (marker = 111) {
             do drawO();
-        } else {
+        }
+        if (~((marker = 120) | (marker = 111))) {
             do drawBlank();
         }
         return;
@@ -52,7 +53,7 @@ class Square {
         let x2 = x_center + marker_size;
         let y1 = y_center - marker_size;
         let y2 = y_center + marker_size;
-
+        
         do Screen.drawLine(x1, y1, x2, y2);
         do Screen.drawLine(x1, y2, x2, y1);
 

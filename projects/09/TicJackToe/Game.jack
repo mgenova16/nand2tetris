@@ -19,7 +19,7 @@ class Game {
         let player[1] = 111;
 
         let continue = true;
-        while (continue) {
+        while (turn < 9) {
             let idx = MoreMath.mod(turn, 2);
             let marker = player[idx];
             let square = getSquare();
@@ -29,9 +29,11 @@ class Game {
                 do Output.printChar(marker);
                 do Output.printString(" wins!");
                 do Output.println();
-                let continue = false;
+                return;
             }
+            let turn = turn + 1;
         }
+        do Output.printString("Cat's game!");
         return;
     }
 
@@ -45,40 +47,56 @@ class Game {
         let cur_square = board.getSquare(x, y);
         do cur_square.select();
 
-        let selection_made = true;
+        let selection_made = false;
         while(~selection_made) {
             let moved = false;
             let key = Keyboard.keyPressed();
+            
+            // Left
             if (key = 130) {
                 do cur_square.deselect();
                 let x = MoreMath.mod(x - 1, 3);
                 let moved = true;
             }
+
+            // Up
             if (key = 131) {
                 do cur_square.deselect();
                 let y = MoreMath.mod(y - 1, 3);
                 let moved = true;
             }
+
+            // Right
             if (key = 132) {
                 do cur_square.deselect();
                 let x = MoreMath.mod(x + 1, 3);
                 let moved = true;
             }
+
+            // Down
             if (key = 133) {
                 do cur_square.deselect();
                 let y = MoreMath.mod(y + 1, 3);
                 let moved = true;
             }
+
+            // Enter
             if (key = 128) {
                 if (cur_square.isEmpty()) {
                     let selection_made = true;
                 }
             }
+
             if (moved) {
                 let cur_square = board.getSquare(x, y);
                 do cur_square.select();
             }
+
+            while (key > 0) {
+                let key = Keyboard.keyPressed();
+            }
         }
+        do cur_square.deselect();
         return board.getSquare(x, y);
     }
 
