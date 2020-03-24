@@ -24,6 +24,10 @@ class Square {
         return marker = 32;
     }
 
+    method int getMarker() {
+        return marker;
+    }
+
     method void setMarker(char m) {
         let marker = m;
         do drawMarker();
@@ -53,7 +57,7 @@ class Square {
         let x2 = x_center + marker_size;
         let y1 = y_center - marker_size;
         let y2 = y_center + marker_size;
-        
+
         do Screen.drawLine(x1, y1, x2, y2);
         do Screen.drawLine(x1, y2, x2, y1);
 
