@@ -16,7 +16,6 @@ class Tokenizer:
         self.pos = -1
         self.len = len(self.jack) - 1
         self.token = None
-        self.token_type = None
 
     def read_jack(self):
         lines = self.jack_fh.readlines()
@@ -46,23 +45,18 @@ class Tokenizer:
 
     def validate_and_set_token(self, token):
         if token in SYMS:
-            self.token = token
-            self.token_type = Tokens.SYMBOL
+            self.token = Token(token, Tokens.SYMBOL)
         elif token in KEYWORDS:
-            self.token = token
-            self.token_type = Tokens.KEYWORD
+            self.token = Token(token, Tokens.KEYWORD)
         elif token.isdigit():
             if not MIN_INT <= int(token) <= MAX_INT:
                 print(f'Integer Over/Underflow: {token}')
                 raise SystemExit
-            self.token = token
-            self.token_type = Tokens.INTEGER_CONST
+            self.token = Token(token, Tokens.INTEGER_CONST)
         elif token.startswith('"') and token.endswith('"'):
-            self.token = token[1:-1]
-            self.token_type = Tokens.STRING_CONST
+            self.token = Token(token[1:-1], Tokens.STRING_CONST)
         elif is_valid_identifier(token):
-            self.token = token
-            self.token_type = Tokens.IDENTIFIER
+            self.token = Token(token, Tokens.IDENTIFIER)
         else:
             print(f'Invalid token: {token}')
             raise SystemExit
@@ -75,15 +69,75 @@ class Tokenizer:
     def cur_char(self):
         return self.jack[self.pos + 1]
 
-    def lookahead(self, n_char):
-        if self.pos + n_char < self.len:
-            return self.jack[self.pos + n_char + 1]
-        else:
-            return None
+    @property
+    def token_type(self):
+        return self.token.token_type
 
-    def __str__(self):
-        token_type = self.token_type.value
+    @property
+    def keyword(self):
+        if self.token_type == Tokens.KEYWORD:
+            return self.token.token
+        else:
+            print(f'ERROR: Token type {self.token_type} has no keyword')
+            raise SystemExit
+
+    @property
+    def identifier(self):
+        if self.token_type == Tokens.IDENTIFIER:
+            return self.token.token
+        else:
+            print(f'ERROR: Token type {self.token_type} has no identifier')
+            raise SystemExit
+
+    @property
+    def symbol(self):
+        if self.token_type == Tokens.SYMBOL:
+            return self.token.token
+        else:
+            print(f'ERROR: Token type {self.token_type} has no symbol')
+            raise SystemExit
+
+    @property
+    def int_val(self):
+        if self.token_type == Tokens.INTEGER_CONST:
+            return self.token.token
+        else:
+            print(f'ERROR: Token type {self.token_type} has no integer value')
+            raise SystemExit
+
+    @property
+    def string_val(self):
+        if self.token_type == Tokens.STRING_CONST:
+            return self.token.token
+        else:
+            print(f'ERROR: Token type {self.token_type} has no string value')
+            raise SystemExit
+
+    def lookahead(self, n_tokens=1):
+        old_pos = self.pos
+        old_token = self.token
+        for _ in range(n_tokens):
+            self.advance()
+
         token = self.token
-        if token in XML_ESCAPE:
-            token = XML_ESCAPE[token]
-        return f'<{token_type}> {token} </{token_type}>'
+        self.pos = old_pos
+        self.token = old_token
+        return token
+
+    def __iter__(self):
+        while self.has_more_tokens():
+            self.advance()
+            yield self.token
+
+
+class Token:
+    def __init__(self, token, token_type):
+        self.token = token
+        self.token_type = token_type
+
+    def bad_xml(self):
+        t = self.token
+        if t in XML_ESCAPE:
+            t = XML_ESCAPE[t]
+        ttype = self.token_type.value
+        return f'<{ttype}> {t} </{ttype}>\n'
