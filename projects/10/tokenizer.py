@@ -3,13 +3,15 @@ from .util import is_valid_identifier
 from .util import KEYWORDS
 from .util import MIN_INT
 from .util import MAX_INT
+from .util import strip_multiline_comments
 from .util import SYMS
 from .util import Tokens
+from .util import XML_ESCAPE
 
 
 class Tokenizer:
-    def __init__(self, jack_file):
-        self.jack_file = jack_file
+    def __init__(self, jack_fh):
+        self.jack_fh = jack_fh
         self.jack = self.read_jack()
         self.pos = -1
         self.len = len(self.jack) - 1
@@ -17,12 +19,12 @@ class Tokenizer:
         self.token_type = None
 
     def read_jack(self):
-        with open(self.jack_file, 'r') as f:
-            lines = f.readlines()
-
-        return ' '.join(clean_line(l) for l in lines)
+        lines = self.jack_fh.readlines()
+        jack = ' '.join(clean_line(l) for l in lines)
+        return strip_multiline_comments(jack)
 
     def has_more_tokens(self):
+        self.skip_whitespace()
         return self.pos < self.len
 
     def advance(self):
@@ -56,7 +58,7 @@ class Tokenizer:
             self.token = token
             self.token_type = Tokens.INTEGER_CONST
         elif token.startswith('"') and token.endswith('"'):
-            self.token = token
+            self.token = token[1:-1]
             self.token_type = Tokens.STRING_CONST
         elif is_valid_identifier(token):
             self.token = token
@@ -72,3 +74,16 @@ class Tokenizer:
     @property
     def cur_char(self):
         return self.jack[self.pos + 1]
+
+    def lookahead(self, n_char):
+        if self.pos + n_char < self.len:
+            return self.jack[self.pos + n_char + 1]
+        else:
+            return None
+
+    def __str__(self):
+        token_type = self.token_type.value
+        token = self.token
+        if token in XML_ESCAPE:
+            token = XML_ESCAPE[token]
+        return f'<{token_type}> {token} </{token_type}>'

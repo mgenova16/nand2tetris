@@ -1,4 +1,3 @@
-from enum import auto
 from enum import Enum
 
 MIN_INT = 0
@@ -6,6 +5,12 @@ MAX_INT = 2**16 - 1
 OPEN_COMMENT = '/*'
 CLOSE_COMMENT = '*/'
 COMMENT_START = '//'
+
+XML_ESCAPE = {
+    '<': '&lt;',
+    '>': '&gt;',
+    '&': '&amp;',
+}
 
 SYMS = list('{}()[].,;+-*/&|<>=~')
 KEYWORDS = [
@@ -18,12 +23,15 @@ KEYWORDS = [
 
 def clean_line(line):
     line = line.split(COMMENT_START)[0].strip()
-    if OPEN_COMMENT in line and CLOSE_COMMENT in line:
-        start_comment = line.find(OPEN_COMMENT)
-        end_comment = line.find(CLOSE_COMMENT) + 2
-        line = line[:start_comment] + line[end_comment:]
-        line = line.strip()
     return line
+
+
+def strip_multiline_comments(s):
+    while OPEN_COMMENT in s and CLOSE_COMMENT in s:
+        start_comment = s.find(OPEN_COMMENT)
+        end_comment = s.find(CLOSE_COMMENT) + 2
+        s = s[:start_comment] + s[end_comment:]
+    return s.strip()
 
 
 def is_valid_identifier(token):
@@ -35,14 +43,9 @@ def is_valid_identifier(token):
     return True
 
 
-class EnumAutoName(Enum):
-    def _generate_next_value_(name, start, count, last):
-        return name
-
-
-class Tokens(EnumAutoName):
-    IDENTIFIER = auto()
-    INTEGER_CONST = auto()
-    KEYWORD = auto()
-    STRING_CONST = auto()
-    SYMBOL = auto()
+class Tokens(Enum):
+    IDENTIFIER = 'identifier'
+    INTEGER_CONST = 'integerConstant'
+    KEYWORD = 'keyword'
+    STRING_CONST = 'stringConstant'
+    SYMBOL = 'symbol'
