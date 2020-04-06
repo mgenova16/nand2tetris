@@ -74,44 +74,8 @@ class Tokenizer:
         return self.token.token_type
 
     @property
-    def keyword(self):
-        if self.token_type == Tokens.KEYWORD:
-            return self.token.token
-        else:
-            print(f'ERROR: Token type {self.token_type} has no keyword')
-            raise SystemExit
-
-    @property
-    def identifier(self):
-        if self.token_type == Tokens.IDENTIFIER:
-            return self.token.token
-        else:
-            print(f'ERROR: Token type {self.token_type} has no identifier')
-            raise SystemExit
-
-    @property
-    def symbol(self):
-        if self.token_type == Tokens.SYMBOL:
-            return self.token.token
-        else:
-            print(f'ERROR: Token type {self.token_type} has no symbol')
-            raise SystemExit
-
-    @property
-    def int_val(self):
-        if self.token_type == Tokens.INTEGER_CONST:
-            return self.token.token
-        else:
-            print(f'ERROR: Token type {self.token_type} has no integer value')
-            raise SystemExit
-
-    @property
-    def string_val(self):
-        if self.token_type == Tokens.STRING_CONST:
-            return self.token.token
-        else:
-            print(f'ERROR: Token type {self.token_type} has no string value')
-            raise SystemExit
+    def token_value(self):
+        return self.token.token
 
     def lookahead(self, n_tokens=1):
         old_pos = self.pos

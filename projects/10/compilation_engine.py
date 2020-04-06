@@ -38,7 +38,7 @@ class CompilationEngine:
             tokens = [tokens]
 
         self.tokenizer.advance()
-        actual_token = self.tokenizer.token.token
+        actual_token = self.tokenizer.token_value
         if actual_token not in tokens:
             print(f'ERROR: Expected {"|".join(tokens)} but got {actual_token}')
             raise SystemExit
@@ -48,7 +48,7 @@ class CompilationEngine:
     def validate_and_write_identifier(self):
         self.tokenizer.advance()
         if not self.tokenizer.token_type == Tokens.IDENTIFIER:
-            print(f'Invalid Identifier: {self.tokenizer.token.token}')
+            print(f'Invalid Identifier: {self.tokenizer.token_value}')
             raise SystemExit
         self.write_badxml()
 
