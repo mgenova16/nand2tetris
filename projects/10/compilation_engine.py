@@ -1,5 +1,8 @@
 from .tokenizer import Tokenizer
+from .util import KEYWORD_CONSTS
 from .util import Tokens
+from .util import TYPE_CONSTS
+from .util import UNARY_OPS
 
 
 class CompilationEngine:
@@ -22,228 +25,150 @@ class CompilationEngine:
             self.f_out.write(f'{token.bad_xml()}')
         self.f_out.write('</tokens>\n')
 
+    def start_sub_compilation_unit(self, unit):
+        self.stack.append(unit)
+        self.write_badxml_open()
+
+    def end_sub_compilation_unit(self, unit):
+        self.write_badxml_close()
+        assert self.stack.pop() == unit
+
+    def expect_and_write(self, tokens):
+        if not isinstance(tokens, list):
+            tokens = [tokens]
+
+        self.tokenizer.advance()
+        actual_token = self.tokenizer.token.token
+        if actual_token not in tokens:
+            print(f'ERROR: Expected {"|".join(tokens)} but got {actual_token}')
+            raise SystemExit
+
+        self.write_badxml()
+
+    def validate_and_write_identifier(self):
+        self.tokenizer.advance()
+        if not self.tokenizer.token_type == Tokens.IDENTIFIER:
+            print(f'Invalid Identifier: {self.tokenizer.token.token}')
+            raise SystemExit
+        self.write_badxml()
+
+    def validate_and_write_function_type(self):
+        self.tokenizer.advance()
+        # easy to validate built-ins, how to validate custom classes?
+        self.write_badxml()
+
+    def validate_and_write_variable_type(self):
+        self.tokenizer.advance()
+        # easy to validate build-ins, how to validate custom classes?
+        self.write_badxml()
+
     def compile(self):
         self.compile_class()
 
     def compile_class(self):
-        '''
-        class -> 'class' className '{' class_var_dec* subroutine_dec* '}'
-        '''
-        # 'class'
-        self.tokenizer.advance()
-        self.stack.append(self.tokenizer.keyword)
-        self.write_badxml_open()
-        self.write_badxml()
+        compilation_unit = 'class'
+        self.start_sub_compilation_unit(compilation_unit)
 
-        # className
-        self.tokenizer.advance()
-        assert self.tokenizer.identifier == self.f_name
-        self.write_badxml()
+        self.expect_and_write('class')
+        self.expect_and_write(self.f_name)
+        self.expect_and_write('{')
 
-        # '{'
-        self.tokenizer.advance()
-        self.write_badxml()
+        self.compile_class_var_decs()
+        self.compile_subroutine_decs()
+        self.expect_and_write('}')
 
+        self.end_sub_compilation_unit(compilation_unit)
+
+    def compile_class_var_decs(self):
+        compilation_unit = 'classVarDec'
+        possible_fields = ['static', 'field']
         next_token = self.tokenizer.lookahead()
-        # class_var_dec*
-        while next_token.token in ['field', 'static']:
-            self.compile_class_var_dec()
+
+        while next_token.token in possible_fields:
+            self.start_sub_compilation_unit(compilation_unit)
+            self.expect_and_write(possible_fields)
+            self.validate_and_write_variable_type()
+            self.validate_and_write_identifier()
+            next_token = self.tokenizer.lookahead()
+            while next_token.token == ',':
+                self.expect_and_write(',')
+                self.validate_and_write_identifier()
+                next_token = self.tokenizer.lookahead()
+            self.expect_and_write(';')
+            self.end_sub_compilation_unit(compilation_unit)
             next_token = self.tokenizer.lookahead()
 
-        # subroutine_dec*
-        while next_token.token in ['constructor', 'function', 'method']:
-            self.compile_subroutine()
+    def compile_subroutine_decs(self):
+        compilation_unit = 'subroutineDec'
+        possible_fields = ['constructor', 'function', 'method']
+        next_token = self.tokenizer.lookahead()
+        while next_token.token in possible_fields:
+            self.start_sub_compilation_unit(compilation_unit)
+            self.expect_and_write(possible_fields)
+            self.validate_and_write_function_type()
+            self.validate_and_write_identifier()
+            self.expect_and_write('(')
+            self.compile_parameter_list()
+            self.expect_and_write(')')
+            self.compile_subroutine_body()
+            self.end_sub_compilation_unit(compilation_unit)
             next_token = self.tokenizer.lookahead()
-
-        # '}'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        self.write_badxml_close()
-        self.stack.pop()
-
-        assert not self.tokenizer.has_more_tokens()
-        assert len(self.stack) == 0
-
-    def compile_class_var_dec(self):
-        '''
-        class_var_dec -> ('static' | 'field') type var_name (',' var_name)* ';'
-        '''
-        self.stack.append('classVarDec')
-        self.write_badxml_open()
-
-        # ('static' | 'field')
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # type
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # var_name
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        self.tokenizer.advance()
-        # (',' var_name)*
-        while self.tokenizer.symbol == ',':
-            self.write_badxml()
-            # var_name
-            self.tokenizer.advance()
-            self.write_badxml()
-            # ','
-            self.tokenizer.advance()
-
-        # ';'
-        self.write_badxml()
-        # end of class var dec
-        self.write_badxml_close()
-        self.stack.pop()
-
-    def compile_subroutine(self):
-        '''
-        subroutine_dec -> ('constructor' | 'function' | 'method') ('void' | type)
-                          name '(' var_list ')' subroutine_body
-        '''
-        self.stack.append('subroutineDec')
-        self.write_badxml_open()
-
-        # ('constructor' | 'function' | 'method')
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # ('void' | type)
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # name
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # '('
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        self.compile_parameter_list()
-
-        # ')'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        self.compile_subroutine_body()
-
-        self.write_badxml_close()
-        self.stack.pop()
 
     def compile_parameter_list(self):
-        '''
-        parameter_list -> ((type name) (',' type name)*)
-        '''
-        self.stack.append("parameterList")
-        self.write_badxml_open()
-
+        compilation_unit = 'parameterList'
+        self.start_sub_compilation_unit(compilation_unit)
         next_token = self.tokenizer.lookahead()
+
         while next_token.token != ')':
             if next_token.token == ',':
-                self.tokenizer.advance()
-                self.write_badxml()
-            # type
-            self.tokenizer.advance()
-            self.write_badxml()
-
-            # name
-            self.tokenizer.advance()
-            self.write_badxml()
-
+                self.expect_and_write(',')
+            self.validate_and_write_variable_type()
+            self.validate_and_write_identifier()
             next_token = self.tokenizer.lookahead()
 
-        self.write_badxml_close()
-        self.stack.pop()
+        self.end_sub_compilation_unit(compilation_unit)
 
     def compile_subroutine_body(self):
-        '''
-        subroutine_body -> '{' var_dec* statements '}'
-        '''
+        compilation_unit = 'subroutineBody'
+        self.start_sub_compilation_unit(compilation_unit)
 
-        self.stack.append('subroutineBody')
-        self.write_badxml_open()
-
-        # '{'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        next_token = self.tokenizer.lookahead()
-        # var_dec*
-        while next_token.token == 'var':
-            self.compile_var_dec()
-            next_token = self.tokenizer.lookahead()
-
-        # statements
+        self.expect_and_write('{')
+        self.compile_var_decs()
         self.compile_statements()
+        self.expect_and_write('}')
 
-        # '}'
-        self.tokenizer.advance()
-        self.write_badxml()
+        self.end_sub_compilation_unit(compilation_unit)
 
-        self.write_badxml_close()
-        self.stack.pop()
-
-    def compile_var_dec(self):
-        '''
-        var_dec -> 'var' type name (',' name)* ';'
-        '''
-        self.stack.append('varDec')
-        self.write_badxml_open()
-
-        # 'var'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # type
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # name
-        self.tokenizer.advance()
-        self.write_badxml()
+    def compile_var_decs(self):
+        compilation_unit = 'varDec'
 
         next_token = self.tokenizer.lookahead()
-        while next_token.token == ',':
-            # ','
-            self.tokenizer.advance()
-            self.write_badxml()
-            # name
-            self.tokenizer.advance()
-            self.write_badxml()
+        while next_token.token == 'var':
+            self.start_sub_compilation_unit(compilation_unit)
+            self.expect_and_write('var')
+            self.validate_and_write_variable_type()
+            self.validate_and_write_identifier()
             next_token = self.tokenizer.lookahead()
-
-        # ';'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        self.write_badxml_close()
-        self.stack.pop()
+            while next_token.token == ',':
+                self.expect_and_write(',')
+                self.validate_and_write_identifier()
+                next_token = self.tokenizer.lookahead()
+            self.expect_and_write(';')
+            self.end_sub_compilation_unit(compilation_unit)
+            next_token = self.tokenizer.lookahead()
 
     def compile_statements(self):
-        '''
-        statements -> statement*
-        '''
-        self.stack.append('statements')
-        self.write_badxml_open()
+        compilation_unit = 'statements'
+        self.start_sub_compilation_unit(compilation_unit)
 
         next_token = self.tokenizer.lookahead()
         while next_token.token != '}':
             self.compile_statement()
             next_token = self.tokenizer.lookahead()
 
-        self.write_badxml_close()
-        self.stack.pop()
+        self.end_sub_compilation_unit(compilation_unit)
 
     def compile_statement(self):
-        '''
-        statement -> let_statement | if_statement | while_statement |
-                     do_statement | return_statement
-        '''
         next_token = self.tokenizer.lookahead()
         if next_token.token == 'let':
             self.compile_let_statement()
@@ -260,309 +185,148 @@ class CompilationEngine:
             raise SystemExit
 
     def compile_let_statement(self):
-        '''
-        let_statement -> 'let' name ('[' expression ']')? '=' expression ';'
-        '''
-        self.stack.append('letStatement')
-        self.write_badxml_open()
+        compilation_unit = 'letStatement'
+        self.start_sub_compilation_unit(compilation_unit)
 
-        # 'let'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # name
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # ('[' expression ']')?
+        self.expect_and_write('let')
+        self.validate_and_write_identifier()
         next_token = self.tokenizer.lookahead()
         if next_token.token == '[':
-            # '['
-            self.tokenizer.advance()
-            self.write_badxml()
-            # expression
+            self.expect_and_write('[')
             self.compile_expression()
-            # ']'
-            self.tokenizer.advance()
-            self.write_badxml()
-            next_token = self.tokenizer.lookahead()
-
-        # '='
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # expression
+            self.expect_and_write(']')
+        self.expect_and_write('=')
         self.compile_expression()
+        self.expect_and_write(';')
 
-        # ';'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        self.write_badxml_close()
-        self.stack.pop()
+        self.end_sub_compilation_unit(compilation_unit)
 
     def compile_if_statement(self):
-        '''
-        if_statement -> 'if' '(' expression ')' '{' statements '}'
-                        ('else' '{' statments '}')?
-        '''
-        self.stack.append('ifStatement')
-        self.write_badxml_open()
+        compilation_unit = 'ifStatement'
+        self.start_sub_compilation_unit(compilation_unit)
 
-        # 'if'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # '('
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # expression
+        self.expect_and_write('if')
+        self.expect_and_write('(')
         self.compile_expression()
-
-        # ')'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # '{'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # statements
+        self.expect_and_write(')')
+        self.expect_and_write('{')
         self.compile_statements()
-
-        # '}'
-        self.tokenizer.advance()
-        self.write_badxml()
+        self.expect_and_write('}')
 
         next_token = self.tokenizer.lookahead()
         if next_token.token == 'else':
-            # 'else'
-            self.tokenizer.advance()
-            self.write_badxml()
-            # '{'
-            self.tokenizer.advance()
-            self.write_badxml()
-            # statements
+            self.expect_and_write('else')
+            self.expect_and_write('{')
             self.compile_statements()
-            # '}'
-            self.tokenizer.advance()
-            self.write_badxml()
+            self.expect_and_write('}')
 
-        self.write_badxml_close()
-        self.stack.pop()
+        self.end_sub_compilation_unit(compilation_unit)
 
     def compile_while_statement(self):
-        '''
-        while_statement -> 'while' '(' expression ')' '{' statements '}'
-        '''
-        self.stack.append('whileStatement')
-        self.write_badxml_open()
+        compilation_unit = 'whileStatement'
+        self.start_sub_compilation_unit(compilation_unit)
 
-        # 'while'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # '('
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # expression
+        self.expect_and_write('while')
+        self.expect_and_write('(')
         self.compile_expression()
-
-        # ')'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # '{'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # statements
+        self.expect_and_write(')')
+        self.expect_and_write('{')
         self.compile_statements()
+        self.expect_and_write('}')
 
-        # '}'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        self.write_badxml_close()
-        self.stack.pop()
+        self.end_sub_compilation_unit(compilation_unit)
 
     def compile_do_statement(self):
-        '''
-        do_statement -> 'do' subroutine_call ';'
-        '''
-        self.stack.append('doStatement')
-        self.write_badxml_open()
+        compilation_unit = 'doStatement'
+        self.start_sub_compilation_unit(compilation_unit)
 
-        # 'do'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # subroutine_call
+        self.expect_and_write('do')
         self.compile_subroutine_call()
+        self.expect_and_write(';')
 
-        # ';'
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        self.write_badxml_close()
-        self.stack.pop()
+        self.end_sub_compilation_unit(compilation_unit)
 
     def compile_return_statement(self):
-        '''
-        return_statement -> 'return' expression? ';'
-        '''
-        self.stack.append('returnStatement')
-        self.write_badxml_open()
+        compilation_unit = 'returnStatement'
+        self.start_sub_compilation_unit(compilation_unit)
 
-        # 'return'
-        self.tokenizer.advance()
-        self.write_badxml()
+        self.expect_and_write('return')
 
         next_token = self.tokenizer.lookahead()
         if next_token.token != ';':
             self.compile_expression()
-            next_token = self.tokenizer.lookahead()
 
-        # ';'
-        self.tokenizer.advance()
-        self.write_badxml()
+        self.expect_and_write(';')
 
-        self.write_badxml_close()
-        self.stack.pop()
+        self.end_sub_compilation_unit(compilation_unit)
 
     def compile_subroutine_call(self):
-        '''
-        subroutine_call -> subroutine_name '(' expression_list ')' |
-                           (class_name | var_name) '.' subroutine_name '(' expression_list ')'
-        '''
-
-        # subroutine_name | (class_name | var_name)
-        self.tokenizer.advance()
-        self.write_badxml()
+        self.validate_and_write_identifier()
 
         next_token = self.tokenizer.lookahead()
         if next_token.token == '.':
-            # '.'
-            self.tokenizer.advance()
-            self.write_badxml()
-            # subroutine_name
-            self.tokenizer.advance()
-            self.write_badxml()
-            next_token = self.tokenizer.lookahead()
+            self.expect_and_write('.')
+            self.validate_and_write_identifier()
 
-        # '('
-        self.tokenizer.advance()
-        self.write_badxml()
-
-        # expression_list
+        self.expect_and_write('(')
         self.compile_expression_list()
-
-        # ')'
-        self.tokenizer.advance()
-        self.write_badxml()
+        self.expect_and_write(')')
 
     def compile_expression_list(self):
-        '''
-        expression_list -> (expression (',' expression)*)?
-        '''
-        self.stack.append('expressionList')
-        self.write_badxml_open()
+        compilation_unit = 'expressionList'
+        self.start_sub_compilation_unit(compilation_unit)
 
         next_token = self.tokenizer.lookahead()
         while next_token.token != ')':
             if next_token.token == ',':
-                self.tokenizer.advance()
-                self.write_badxml()
+                self.expect_and_write(',')
             self.compile_expression()
             next_token = self.tokenizer.lookahead()
 
-        self.write_badxml_close()
-        self.stack.pop()
+        self.end_sub_compilation_unit(compilation_unit)
 
     def compile_expression(self):
-        '''
-        expression -> term (op term)*
-        '''
-        self.stack.append('expression')
-        self.write_badxml_open()
-
-        # term
+        compilation_unit = 'expression'
+        self.start_sub_compilation_unit(compilation_unit)
         self.compile_term()
 
         next_token = self.tokenizer.lookahead()
         while next_token.token in list('+-*/&|<>='):
-            # op
-            self.tokenizer.advance()
-            self.write_badxml()
-            # term
+            self.expect_and_write(next_token.token)
             self.compile_term()
             next_token = self.tokenizer.lookahead()
 
-        self.write_badxml_close()
-        self.stack.pop()
+        self.end_sub_compilation_unit(compilation_unit)
 
     def compile_term(self):
-        '''
-        term -> integer_const | string_const | keyword_const | var_name |
-                var_name '[' expression ']' | subroutine_call | '(' expression ')' |
-                unary_op term
-        '''
-        self.stack.append('term')
-        self.write_badxml_open()
+        compilation_unit = 'term'
+        self.start_sub_compilation_unit(compilation_unit)
 
-        const_types = [Tokens.INTEGER_CONST, Tokens.STRING_CONST]
-        const_keywords = ['true', 'false', 'null', 'this']
         next_token = self.tokenizer.lookahead()
         ttype = next_token.token_type
         token = next_token.token
-        # integer_const | string_const | keyword_const
-        if ttype in const_types or token in const_keywords:
-            # const
-            self.tokenizer.advance()
-            self.write_badxml()
-        # '(' expression ')'
-        elif next_token.token == '(':
-            # '('
-            self.tokenizer.advance()
-            self.write_badxml()
-            # expression
+        if ttype in TYPE_CONSTS or token in KEYWORD_CONSTS:
+            self.expect_and_write(token)
+        elif token == '(':
+            self.expect_and_write('(')
             self.compile_expression()
-            # ')'
-            self.tokenizer.advance()
-            self.write_badxml()
-        # unary_op term
-        elif next_token.token in ['-', '~']:
-            # unary_op
-            self.tokenizer.advance()
-            self.write_badxml()
-            # term
+            self.expect_and_write(')')
+        elif token in UNARY_OPS:
+            self.expect_and_write(token)
             self.compile_term()
         else:
             next_next_token = self.tokenizer.lookahead(2)
             if next_next_token.token in ['(', '.']:
-                # subroutine_call
                 self.compile_subroutine_call()
             elif next_next_token.token == '[':
-                # var_name
-                self.tokenizer.advance()
-                self.write_badxml()
-                # '['
-                self.tokenizer.advance()
-                self.write_badxml()
-                # expression
+                self.validate_and_write_identifier()
+                self.expect_and_write('[')
                 self.compile_expression()
-                # ']'
-                self.tokenizer.advance()
-                self.write_badxml()
+                self.expect_and_write(']')
             else:
-                # var_name
-                self.tokenizer.advance()
-                self.write_badxml()
+                self.validate_and_write_identifier()
 
-        self.write_badxml_close()
-        self.stack.pop()
+        self.end_sub_compilation_unit(compilation_unit)
 
     def write_badxml(self):
         s = f'{self.indent}{self.tokenizer.token.bad_xml()}'

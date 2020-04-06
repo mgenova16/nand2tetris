@@ -1,5 +1,14 @@
 from enum import Enum
 
+
+class Tokens(Enum):
+    IDENTIFIER = 'identifier'
+    INTEGER_CONST = 'integerConstant'
+    KEYWORD = 'keyword'
+    STRING_CONST = 'stringConstant'
+    SYMBOL = 'symbol'
+
+
 MIN_INT = 0
 MAX_INT = 2**16 - 1
 OPEN_COMMENT = '/*'
@@ -13,12 +22,17 @@ XML_ESCAPE = {
 }
 
 SYMS = list('{}()[].,;+-*/&|<>=~')
+UNARY_OPS = ['-', '~']
+
 KEYWORDS = [
     'class', 'constructor', 'function', 'method',
     'field', 'static', 'var', 'int', 'char', 'boolean',
     'void', 'true', 'false', 'null', 'this', 'let',
     'do', 'if', 'else', 'while', 'return'
 ]
+
+TYPE_CONSTS = [Tokens.INTEGER_CONST, Tokens.STRING_CONST]
+KEYWORD_CONSTS = ['true', 'false', 'null', 'this']
 
 
 def clean_line(line):
@@ -41,11 +55,3 @@ def is_valid_identifier(token):
         if not (c.isalnum() or c == '_'):
             return False
     return True
-
-
-class Tokens(Enum):
-    IDENTIFIER = 'identifier'
-    INTEGER_CONST = 'integerConstant'
-    KEYWORD = 'keyword'
-    STRING_CONST = 'stringConstant'
-    SYMBOL = 'symbol'
