@@ -2,18 +2,20 @@ from .tokenizer import Tokenizer
 from .util import KEYWORD_CONSTS
 from .util import Tokens
 from .util import TYPE_CONSTS
+from .util import TYPES
 from .util import UNARY_OPS
 
 
 class CompilationEngine:
 
-    def __init__(self, f_in, f_out):
+    def __init__(self, f_in, f_out, classes):
         self.f_name = f_in.stem
         self.f_in = open(f_in, 'r')
         self.f_out = open(f_out, 'w')
         self.tokenizer = Tokenizer(self.f_in)
         self.stack = []
         self.indent_str = '  '
+        self.available_types = TYPES + classes
 
     def __del__(self):
         self.f_in.close()
@@ -52,14 +54,10 @@ class CompilationEngine:
             raise SystemExit
         self.write_badxml()
 
-    def validate_and_write_function_type(self):
+    def validate_and_write_type(self):
         self.tokenizer.advance()
-        # easy to validate built-ins, how to validate custom classes?
-        self.write_badxml()
-
-    def validate_and_write_variable_type(self):
-        self.tokenizer.advance()
-        # easy to validate build-ins, how to validate custom classes?
+        if self.tokenizer.token_value not in self.available_types:
+            print(f'Invalid type: {self.tokenizer.token_value}')
         self.write_badxml()
 
     def compile(self):
@@ -87,7 +85,7 @@ class CompilationEngine:
         while next_token.token in possible_fields:
             self.start_sub_compilation_unit(compilation_unit)
             self.expect_and_write(possible_fields)
-            self.validate_and_write_variable_type()
+            self.validate_and_write_type()
             self.validate_and_write_identifier()
             next_token = self.tokenizer.lookahead()
             while next_token.token == ',':
@@ -105,7 +103,7 @@ class CompilationEngine:
         while next_token.token in possible_fields:
             self.start_sub_compilation_unit(compilation_unit)
             self.expect_and_write(possible_fields)
-            self.validate_and_write_function_type()
+            self.validate_and_write_type()
             self.validate_and_write_identifier()
             self.expect_and_write('(')
             self.compile_parameter_list()
@@ -122,7 +120,7 @@ class CompilationEngine:
         while next_token.token != ')':
             if next_token.token == ',':
                 self.expect_and_write(',')
-            self.validate_and_write_variable_type()
+            self.validate_and_write_type()
             self.validate_and_write_identifier()
             next_token = self.tokenizer.lookahead()
 
@@ -146,7 +144,7 @@ class CompilationEngine:
         while next_token.token == 'var':
             self.start_sub_compilation_unit(compilation_unit)
             self.expect_and_write('var')
-            self.validate_and_write_variable_type()
+            self.validate_and_write_type()
             self.validate_and_write_identifier()
             next_token = self.tokenizer.lookahead()
             while next_token.token == ',':

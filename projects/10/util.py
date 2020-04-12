@@ -31,6 +31,7 @@ KEYWORDS = [
     'do', 'if', 'else', 'while', 'return'
 ]
 
+TYPES = ['int', 'char', 'boolean', 'void', 'String', 'Array']
 TYPE_CONSTS = [Tokens.INTEGER_CONST, Tokens.STRING_CONST]
 KEYWORD_CONSTS = ['true', 'false', 'null', 'this']
 
