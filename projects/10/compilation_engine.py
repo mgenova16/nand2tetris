@@ -58,6 +58,7 @@ class CompilationEngine:
         self.tokenizer.advance()
         if self.tokenizer.token_value not in self.available_types:
             print(f'Invalid type: {self.tokenizer.token_value}')
+            raise SystemExit
         self.write_badxml()
 
     def compile(self):
