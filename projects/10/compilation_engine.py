@@ -1,3 +1,4 @@
+from .symbol_table import SymbolTable
 from .tokenizer import Tokenizer
 from .util import KEYWORD_CONSTS
 from .util import Tokens
@@ -16,6 +17,7 @@ class CompilationEngine:
         self.stack = []
         self.indent_str = '  '
         self.available_types = TYPES + classes
+        self.symbol_table = SymbolTable()
 
     def __del__(self):
         self.f_in.close()
@@ -86,24 +88,35 @@ class CompilationEngine:
         while next_token.token in possible_fields:
             self.start_sub_compilation_unit(compilation_unit)
             self.expect_and_write(possible_fields)
+            kind = self.tokenizer.token_value
             self.validate_and_write_type()
+            var_type = self.tokenizer.token_value
             self.validate_and_write_identifier()
+            name = self.tokenizer.token_value
+            self.symbol_table.add_variable(name, var_type, kind)
             next_token = self.tokenizer.lookahead()
             while next_token.token == ',':
                 self.expect_and_write(',')
                 self.validate_and_write_identifier()
+                name = self.tokenizer.token_value
+                self.symbol_table.add_variable(name, var_type, kind)
                 next_token = self.tokenizer.lookahead()
             self.expect_and_write(';')
             self.end_sub_compilation_unit(compilation_unit)
             next_token = self.tokenizer.lookahead()
+
+        self.write_sym_table()
 
     def compile_subroutine_decs(self):
         compilation_unit = 'subroutineDec'
         possible_fields = ['constructor', 'function', 'method']
         next_token = self.tokenizer.lookahead()
         while next_token.token in possible_fields:
+            self.symbol_table.enter_new_scope()
             self.start_sub_compilation_unit(compilation_unit)
             self.expect_and_write(possible_fields)
+            if self.tokenizer.token_value == 'method':
+                self.symbol_table.add_variable('this', self.f_name, 'argument')
             self.validate_and_write_type()
             self.validate_and_write_identifier()
             self.expect_and_write('(')
@@ -111,18 +124,25 @@ class CompilationEngine:
             self.expect_and_write(')')
             self.compile_subroutine_body()
             self.end_sub_compilation_unit(compilation_unit)
+            self.write_sym_table()
+            self.symbol_table.close_scope()
             next_token = self.tokenizer.lookahead()
 
     def compile_parameter_list(self):
         compilation_unit = 'parameterList'
+        kind = 'argument'
         self.start_sub_compilation_unit(compilation_unit)
+
         next_token = self.tokenizer.lookahead()
 
         while next_token.token != ')':
             if next_token.token == ',':
                 self.expect_and_write(',')
             self.validate_and_write_type()
+            var_type = self.tokenizer.token_value
             self.validate_and_write_identifier()
+            name = self.tokenizer.token_value
+            self.symbol_table.add_variable(name, var_type, kind)
             next_token = self.tokenizer.lookahead()
 
         self.end_sub_compilation_unit(compilation_unit)
@@ -140,17 +160,23 @@ class CompilationEngine:
 
     def compile_var_decs(self):
         compilation_unit = 'varDec'
+        kind = 'local'
 
         next_token = self.tokenizer.lookahead()
         while next_token.token == 'var':
             self.start_sub_compilation_unit(compilation_unit)
             self.expect_and_write('var')
             self.validate_and_write_type()
+            var_type = self.tokenizer.token_value
             self.validate_and_write_identifier()
+            name = self.tokenizer.token_value
+            self.symbol_table.add_variable(name, var_type, kind)
             next_token = self.tokenizer.lookahead()
             while next_token.token == ',':
                 self.expect_and_write(',')
                 self.validate_and_write_identifier()
+                name = self.tokenizer.token_value
+                self.symbol_table.add_variable(name, var_type, kind)
                 next_token = self.tokenizer.lookahead()
             self.expect_and_write(';')
             self.end_sub_compilation_unit(compilation_unit)
@@ -189,6 +215,7 @@ class CompilationEngine:
 
         self.expect_and_write('let')
         self.validate_and_write_identifier()
+        self.symbol_table.lookup(self.tokenizer.token_value)
         next_token = self.tokenizer.lookahead()
         if next_token.token == '[':
             self.expect_and_write('[')
@@ -319,11 +346,13 @@ class CompilationEngine:
                 self.compile_subroutine_call()
             elif next_next_token.token == '[':
                 self.validate_and_write_identifier()
+                self.symbol_table.lookup(self.tokenizer.token_value)
                 self.expect_and_write('[')
                 self.compile_expression()
                 self.expect_and_write(']')
             else:
                 self.validate_and_write_identifier()
+                self.symbol_table.lookup(self.tokenizer.token_value)
 
         self.end_sub_compilation_unit(compilation_unit)
 
@@ -338,6 +367,10 @@ class CompilationEngine:
     def write_badxml_close(self):
         s = f'{self.indent_open_close}</{self.stack[-1]}>\n'
         self.f_out.write(s)
+
+    def write_sym_table(self):
+        s = ', '.join(f'{k}: {v}' for k, v in self.symbol_table.cur_scope.variables.items())
+        self.f_out.write(f'{self.indent}VARIABLES:{s}\n')
 
     @property
     def indent(self):
