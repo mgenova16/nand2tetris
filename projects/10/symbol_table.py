@@ -1,23 +1,29 @@
-
 from dataclasses import dataclass
+
 
 class SymbolTable:
     def __init__(self):
         self.static_scope = Scope()
         self.cur_scope = self.static_scope
 
-    def add_variable(self, name, var_type, kind):
+    def add(self, name, var_type, kind):
         self.cur_scope.add_variable(name, var_type, kind)
 
     def lookup(self, name):
         return self.cur_scope.lookup(name)
 
     def enter_new_scope(self):
-        self.cur_scope = Scope(self.cur_scope)
+        self.cur_scope = Scope(enclosing_scope=self.cur_scope)
 
     def close_scope(self):
         if self.cur_scope is not self.static_scope:
             self.cur_scope = self.cur_scope.enclosing_scope
+
+    def n_locals(self):
+        return self.cur_scope.get_idx('local')
+
+    def n_fields(self):
+        return self.static_scope.get_idx('field')
 
 
 class Scope:
@@ -36,8 +42,7 @@ class Scope:
             if self.enclosing_scope is not None:
                 return self.enclosing_scope.lookup(name)
             else:
-                print(f'ERROR: variable {name} not found')
-                raise SystemExit
+                raise KeyError(f'ERROR: variable {name} not found')
         return self.variables[name]
 
     def get_idx(self, kind):

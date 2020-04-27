@@ -35,6 +35,28 @@ TYPES = ['int', 'char', 'boolean', 'void', 'String', 'Array']
 TYPE_CONSTS = [Tokens.INTEGER_CONST, Tokens.STRING_CONST]
 KEYWORD_CONSTS = ['true', 'false', 'null', 'this']
 
+ARITHMETIC_LOOKUP = {
+    '+': 'add',
+    '-': 'sub',
+    '~': 'not',
+    '&': 'and',
+    '|': 'or',
+    '>': 'gt',
+    '<': 'lt',
+    '=': 'eq'
+}
+
+UNARY_OP_LOOKUP = {
+    '~': 'not',
+    '-': 'neg',
+}
+
+
+def get_segment(var_kind):
+    if var_kind == 'field':
+        return 'this'
+    return var_kind
+
 
 def clean_line(line):
     line = line.split(COMMENT_START)[0].strip()
